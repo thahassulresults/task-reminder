@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Task Reminder">
+    <meta name="theme-color" content="#007AFF">
+    <title>Task Reminder - Voice to Calendar</title>
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23007AFF' width='180' height='180'/><text x='90' y='100' font-size='80' fill='white' text-anchor='middle' font-weight='bold' font-family='system-ui'>T</text></svg>">
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            background: #F2F2F7;
+        }
+
+        .safe-area {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+            color: white;
+            padding: max(16px, env(safe-area-inset-top)) 16px 24px 16px;
+            text-align: center;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            margin: 4px 0 0;
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+        }
+
+        .content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .mic-section {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+        .mic-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #34C759 0%, #30B0C0 100%);
+            border: none;
+            box-shadow: 0 10px 30px rgba(52, 199, 89, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            transition: all 0.2s ease;
+            color: white;
+            -webkit-tap-highlight-color: transparent;
+            padding: 0;
+        }
+
+        .mic-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(52, 199, 89, 0.2);
+        }
+
+        .mic-button.recording {
+            background: linear-gradient(135deg, #FF3B30 0%, #FF453A 100%);
+            box-shadow: 0 10px 30px rgba(255, 59, 48, 0.3);
+            animation: pulse-red 1s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 10px 30px rgba(255, 59, 48, 0.3); }
+            50% { box-shadow: 0 10px 40px rgba(255, 59, 48, 0.5); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .transcript-card {
+            min-height: 100px;
+        }
+
+        .label-small {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .transcript-text {
+            font-size: 16px;
+            font-weight: 400;
+            color: #000;
+            line-height: 1.6;
+        }
+
+        .transcript-text.empty {
+            color: #999;
+            font-style: italic;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        input[type="date"],
+        input[type="time"],
+        select {
+            padding: 12px 12px;
+            border: 1px solid #E5E5EA;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            background: white;
+            color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI';
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="date"] {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%23007AFF'%3E%3Cpath d='M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+            padding-right: 36px;
+        }
+
+        input[type="time"] {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%23007AFF'%3E%3Cpath d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+            padding-right: 36px;
+        }
+
+        select {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23007AFF' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 12px;
+            padding-right: 36px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #007AFF;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .button-group.full {
+            grid-template-columns: 1fr;
+        }
+
+        button {
+            padding: 14px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #007AFF;
+            border: 1px solid #E5E5EA;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-secondary:active {
+            background: #F2F2F7;
+            opacity: 0.8;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3);
+            grid-column: 1 / -1;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 10px rgba(0, 122, 255, 0.2);
+        }
+
+        .status-alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            font-weight: 500;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-alert.show {
+            display: block;
+        }
+
+        .status-success {
+            background: #D1F4E6;
+            color: #00563B;
+            border: 1px solid #34C759;
+        }
+
+        .status-error {
+            background: #FEDAD1;
+            color: #5F0000;
+            border: 1px solid #FF3B30;
+        }
+
+        .status-info {
+            background: #D5E5FF;
+            color: #003D99;
+            border: 1px solid #007AFF;
+        }
+
+        .tasks-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E5EA;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .task-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #000;
+            margin: 0 0 6px;
+            word-break: break-word;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: #666;
+            margin: 4px 0;
+        }
+
+        .task-delete {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 24px;
+            padding: 0;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: -4px;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .task-delete:active {
+            color: #FF3B30;
+            transform: scale(1.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: #999;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .sync-banner {
+            background: linear-gradient(135deg, #F5A623 0%, #F39C12 100%);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
+        }
+
+        .sync-banner strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #5AC8FA 0%, #007AFF 100%);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .export-btn:active {
+            transform: scale(0.96);
+        }
+    </style>
+</head>
+<body>
+
+<div class="safe-area">
+    <div class="header">
+        <h1>📱 Task Reminder</h1>
+        <p>Voice to Calendar Sync</p>
+    </div>
+
+    <div class="content">
+        <div class="sync-banner">
+            <strong>📲 Add to Home Screen</strong>
+            Share → Add to Home Screen for instant access
+        </div>
+
+        <div id="statusAlert" class="status-alert"></div>
+
+        <div class="mic-section">
+            <button class="mic-button" id="micButton" title="Press to speak">
+                🎤
+            </button>
+        </div>
+
+        <div class="card transcript-card">
+            <div class="label-small">Your voice message</div>
+            <div class="transcript-text empty" id="transcript">Tap microphone to speak...</div>
+        </div>
+
+        <div class="card form-section">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Task date</label>
+                    <input type="date" id="taskDate">
+                </div>
+                <div class="form-group">
+                    <label>Due time</label>
+                    <input type="time" id="taskTime" value="09:00">
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Branch / Employee</label>
+                    <select id="taskBranch">
+                        <option value="">Select branch...</option>
+                        <option value="Branch A">Branch A</option>
+                        <option value="Branch B">Branch B</option>
+                        <option value="Branch C">Branch C</option>
+                        <option value="Head Office">Head Office</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Remind before</label>
+                    <select id="reminderDays">
+                        <option value="0">Same day</option>
+                        <option value="1" selected>1 day before</option>
+                        <option value="2">2 days before</option>
+                        <option value="3">3 days before</option>
+                        <option value="7">1 week before</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Reminder time</label>
+                    <select id="reminderTime">
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="14:00" selected>2:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group full">
+            <button class="btn-secondary" id="clearBtn">Clear</button>
+            <button class="btn-primary" id="addBtn">📅 Add to Calendar</button>
+        </div>
+
+        <div class="tasks-section">
+            <div class="section-title">Scheduled Tasks</div>
+            <div id="tasksList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    
+    try {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.continuous = false;
+        recognition.interimResults = true;
+    } catch (e) {
+        console.log('Speech Recognition not available');
+    }
+
+    let isRecording = false;
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+    const micButton = document.getElementById('micButton');
+    const transcriptEl = document.getElementById('transcript');
+    const taskDateInput = document.getElementById('taskDate');
+    const taskTimeInput = document.getElementById('taskTime');
+    const taskBranchSelect = document.getElementById('taskBranch');
+    const addBtn = document.getElementById('addBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const tasksListEl = document.getElementById('tasksList');
+    const statusEl = document.getElementById('statusAlert');
+
+    const today = new Date().toISOString().split('T')[0];
+    taskDateInput.value = today;
+    taskDateInput.min = today;
+
+    if (recognition) {
+        recognition.addEventListener('result', (event) => {
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    transcriptEl.textContent = transcript.charAt(0).toUpperCase() + transcript.slice(1);
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            if (interimTranscript && !transcriptEl.textContent.includes(interimTranscript)) {
+                transcriptEl.textContent = interimTranscript + '...';
+            }
+        });
+
+        recognition.addEventListener('end', () => {
+            isRecording = false;
+            micButton.classList.remove('recording');
+            if (transcriptEl.textContent === 'Listening...') {
+                transcriptEl.textContent = 'No speech detected. Try again.';
+                transcriptEl.classList.add('empty');
+            }
+        });
+
+        micButton.addEventListener('click', () => {
+            if (!isRecording) {
+                isRecording = true;
+                micButton.classList.add('recording');
+                transcriptEl.textContent = 'Listening...';
+                transcriptEl.classList.remove('empty');
+                recognition.start();
+            } else {
+                isRecording = false;
+                micButton.classList.remove('recording');
+                recognition.stop();
+            }
+        });
+    } else {
+        micButton.addEventListener('click', () => {
+            showStatus('Speech recognition not available on this device', 'error');
+        });
+    }
+
+    addBtn.addEventListener('click', () => {
+        const task = transcriptEl.textContent;
+        const date = taskDateInput.value;
+        const time = taskTimeInput.value;
+        const branch = taskBranchSelect.value;
+        const reminderDays = parseInt(document.getElementById('reminderDays').value);
+        const reminderTime = document.getElementById('reminderTime').value;
+
+        if (!task || task.includes('Listening') || task.includes('No speech') || task.includes('empty')) {
+            showStatus('Speak a task first', 'error');
+            return;
+        }
+
+        if (!branch) {
+            showStatus('Select a branch', 'error');
+            return;
+        }
+
+        const taskObj = {
+            id: Date.now(),
+            task,
+            date,
+            time,
+            branch,
+            reminderDays,
+            reminderTime,
+            createdAt: new Date().toLocaleDateString()
+        };
+
+        tasks.push(taskObj);
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+
+        generateAndDownloadICS(taskObj);
+
+        showStatus(`✓ Task added! Reminder: ${formatDateWithBranch(date, reminderDays, reminderTime)} (${branch})`, 'success');
+
+        transcriptEl.textContent = 'Tap microphone to speak...';
+        transcriptEl.classList.add('empty');
+        taskBranchSelect.value = '';
+        taskDateInput.value = today;
+
+        renderTasks();
+
+        setTimeout(() => hideStatus(), 4000);
+    });
+
+    clearBtn.addEventListener('click', () => {
+        transcriptEl.textContent = 'Tap microphone to speak...';
+        transcriptEl.classList.add('empty');
+        taskBranchSelect.value = '';
+        taskDateInput.value = today;
+        taskTimeInput.value = '09:00';
+        hideStatus();
+    });
+
+    function generateAndDownloadICS(taskObj) {
+        const taskDate = new Date(taskObj.date + 'T' + taskObj.time);
+
+        const formatDate = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            const seconds = String(d.getSeconds()).padStart(2, '0');
+            return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+        };
+
+        const ics = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//iPhone Task Reminder//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:${taskObj.id}@taskreminder.local
+DTSTAMP:${formatDate(new Date())}
+DTSTART:${formatDate(taskDate)}
+SUMMARY:${taskObj.task} (${taskObj.branch})
+DESCRIPTION:Employee/Branch: ${taskObj.branch}\\nCreated: ${taskObj.createdAt}
+LOCATION:${taskObj.branch}
+BEGIN:VALARM
+TRIGGER:-PT${taskObj.reminderDays * 24}H
+ACTION:DISPLAY
+DESCRIPTION:Reminder: ${taskObj.task}
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+        downloadICS(ics, `task-${taskObj.id}.ics`);
+    }
+
+    function downloadICS(content, filename) {
+        const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function formatDateWithBranch(date, days, time) {
+        const d = new Date(date);
+        d.setDate(d.getDate() - days);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ` at ${time}`;
+    }
+
+    function renderTasks() {
+        if (tasks.length === 0) {
+            tasksListEl.innerHTML = '<div class="empty-state"><p>No tasks scheduled</p></div>';
+            return;
+        }
+
+        tasksListEl.innerHTML = tasks.map(task => `
+            <div class="task-card">
+                <div class="task-info">
+                    <p class="task-title">${escapeHtml(task.task)}</p>
+                    <div class="task-meta">📅 ${formatDate(task.date)} at ${task.time}</div>
+                    <div class="task-meta">🏢 ${escapeHtml(task.branch)}</div>
+                    <div class="task-meta">🔔 ${task.reminderTime}</div>
+                </div>
+                <button class="task-delete" onclick="deleteTask(${task.id})" title="Delete task">×</button>
+            </div>
+        `).join('');
+    }
+
+    function deleteTask(id) {
+        tasks = tasks.filter(t => t.id !== id);
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        showStatus('Task deleted', 'info');
+        renderTasks();
+        setTimeout(() => hideStatus(), 2000);
+    }
+
+    function formatDate(dateStr) {
+        const d = new Date(dateStr + 'T00:00:00');
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function showStatus(msg, type) {
+        statusEl.textContent = msg;
+        statusEl.className = `status-alert status-${type} show`;
+    }
+
+    function hideStatus() {
+        statusEl.classList.remove('show');
+    }
+
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    renderTasks();
+</script>
+
+</body>
+</html>
