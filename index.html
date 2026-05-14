@@ -7,523 +7,180 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Task Reminder">
     <meta name="theme-color" content="#007AFF">
-    <title>Task Reminder - Voice to Calendar</title>
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23007AFF' width='180' height='180'/><text x='90' y='100' font-size='80' fill='white' text-anchor='middle' font-weight='bold' font-family='system-ui'>T</text></svg>">
+    <title>Task Reminder - Smart Assistant</title>
     <style>
-        * {
-            box-sizing: border-box;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
-        }
-
-        html, body {
-            margin: 0;
-            padding: 0;
-            background: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            background: #F2F2F7;
-        }
-
-        .safe-area {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
-            color: white;
-            padding: max(16px, env(safe-area-inset-top)) 16px 24px 16px;
-            text-align: center;
-            flex-shrink: 0;
-            z-index: 100;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-        }
-
-        .header p {
-            margin: 4px 0 0;
-            font-size: 13px;
-            opacity: 0.9;
-            font-weight: 400;
-        }
-
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 20px 16px max(20px, env(safe-area-inset-bottom));
-        }
-
-        .content::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .content::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 4px;
-        }
-
-        .mic-section {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 32px;
-        }
-
-        .mic-button {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #34C759 0%, #30B0C0 100%);
-            border: none;
-            box-shadow: 0 10px 30px rgba(52, 199, 89, 0.3);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            transition: all 0.2s ease;
-            color: white;
-            -webkit-tap-highlight-color: transparent;
-            padding: 0;
-        }
-
-        .mic-button:active {
-            transform: scale(0.95);
-            box-shadow: 0 5px 15px rgba(52, 199, 89, 0.2);
-        }
-
-        .mic-button.recording {
-            background: linear-gradient(135deg, #FF3B30 0%, #FF453A 100%);
-            box-shadow: 0 10px 30px rgba(255, 59, 48, 0.3);
-            animation: pulse-red 1s infinite;
-        }
-
-        @keyframes pulse-red {
-            0%, 100% { box-shadow: 0 10px 30px rgba(255, 59, 48, 0.3); }
-            50% { box-shadow: 0 10px 40px rgba(255, 59, 48, 0.5); }
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-        .transcript-card {
-            min-height: 100px;
-        }
-
-        .label-small {
-            font-size: 12px;
-            font-weight: 600;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-
-        .transcript-text {
-            font-size: 16px;
-            font-weight: 400;
-            color: #000;
-            line-height: 1.6;
-        }
-
-        .transcript-text.empty {
-            color: #999;
-            font-style: italic;
-        }
-
-        .form-section {
-            margin-bottom: 20px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .form-row.full {
-            grid-template-columns: 1fr;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-        }
-
-        input[type="date"],
-        input[type="time"],
-        select {
-            padding: 12px 12px;
-            border: 1px solid #E5E5EA;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 500;
-            background: white;
-            color: #000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI';
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        input[type="date"] {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%23007AFF'%3E%3Cpath d='M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 20px;
-            padding-right: 36px;
-        }
-
-        input[type="time"] {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%23007AFF'%3E%3Cpath d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 20px;
-            padding-right: 36px;
-        }
-
-        select {
-            cursor: pointer;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23007AFF' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 12px;
-            padding-right: 36px;
-        }
-
-        input:focus,
-        select:focus {
-            outline: none;
-            border-color: #007AFF;
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-        }
-
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .button-group.full {
-            grid-template-columns: 1fr;
-        }
-
-        button {
-            padding: 14px 16px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #007AFF;
-            border: 1px solid #E5E5EA;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
-
-        .btn-secondary:active {
-            background: #F2F2F7;
-            opacity: 0.8;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
-            color: white;
-            font-weight: 600;
-            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3);
-            grid-column: 1 / -1;
-        }
-
-        .btn-primary:active {
-            transform: scale(0.98);
-            box-shadow: 0 4px 10px rgba(0, 122, 255, 0.2);
-        }
-
-        .status-alert {
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-bottom: 16px;
-            font-size: 13px;
-            font-weight: 500;
-            display: none;
-            animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .status-alert.show {
-            display: block;
-        }
-
-        .status-success {
-            background: #D1F4E6;
-            color: #00563B;
-            border: 1px solid #34C759;
-        }
-
-        .status-error {
-            background: #FEDAD1;
-            color: #5F0000;
-            border: 1px solid #FF3B30;
-        }
-
-        .status-info {
-            background: #D5E5FF;
-            color: #003D99;
-            border: 1px solid #007AFF;
-        }
-
-        .tasks-section {
-            margin-top: 24px;
-            padding-top: 20px;
-            border-top: 1px solid #E5E5EA;
-        }
-
-        .section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
-        }
-
-        .task-card {
-            background: white;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-        .task-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .task-title {
-            font-size: 15px;
-            font-weight: 500;
-            color: #000;
-            margin: 0 0 6px;
-            word-break: break-word;
-        }
-
-        .task-meta {
-            font-size: 12px;
-            color: #666;
-            margin: 4px 0;
-        }
-
-        .task-delete {
-            background: none;
-            border: none;
-            color: #999;
-            font-size: 24px;
-            padding: 0;
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: -4px;
-            flex-shrink: 0;
-            transition: all 0.2s ease;
-        }
-
-        .task-delete:active {
-            color: #FF3B30;
-            transform: scale(1.1);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 32px 16px;
-            color: #999;
-        }
-
-        .empty-state p {
-            margin: 0;
-            font-size: 13px;
-        }
-
-        .sync-banner {
-            background: linear-gradient(135deg, #F5A623 0%, #F39C12 100%);
-            color: white;
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-bottom: 16px;
-            font-size: 12px;
-            font-weight: 500;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
-        }
-
-        .sync-banner strong {
-            display: block;
-            margin-bottom: 4px;
-            font-size: 13px;
-        }
-
-        .export-btn {
-            background: linear-gradient(135deg, #5AC8FA 0%, #007AFF 100%);
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-left: 8px;
-        }
-
-        .export-btn:active {
-            transform: scale(0.96);
-        }
+        * { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+        html, body { margin: 0; padding: 0; background: #F2F2F7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI'; height: 100%; }
+        body { display: flex; flex-direction: column; }
+        .safe-area { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%); color: white; padding: max(16px, env(safe-area-inset-top)) 16px 20px; text-align: center; flex-shrink: 0; z-index: 100; }
+        .header h1 { margin: 0 0 5px; font-size: 22px; font-weight: 600; }
+        .header p { margin: 0; font-size: 12px; opacity: 0.9; }
+        .tabs { display: flex; background: white; border-bottom: 1px solid #E5E5EA; gap: 0; flex-shrink: 0; }
+        .tab { flex: 1; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; color: #666; border-bottom: 3px solid transparent; cursor: pointer; }
+        .tab.active { color: #007AFF; border-bottom-color: #007AFF; }
+        .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
+        .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { font-size: 12px; font-weight: 600; color: #666; margin-bottom: 6px; display: block; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #E5E5EA; border-radius: 8px; font-size: 14px; font-family: inherit; }
+        input:focus, select:focus { outline: none; border-color: #007AFF; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
+        .mic-button { width: 100%; padding: 16px; background: linear-gradient(135deg, #34C759 0%, #30B0C0 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; margin: 16px 0; cursor: pointer; }
+        .mic-button.recording { background: linear-gradient(135deg, #FF3B30 0%, #FF453A 100%); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0.5); } 50% { box-shadow: 0 0 0 10px rgba(255,59,48,0); } }
+        .transcript { background: #F9F9F9; padding: 12px; border-radius: 8px; margin: 12px 0; font-size: 14px; min-height: 50px; }
+        .button { width: 100%; padding: 14px; background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+        .button-secondary { background: white; color: #007AFF; border: 1px solid #E5E5EA; }
+        .button-danger { background: #FF3B30; color: white; }
+        .status { padding: 12px; border-radius: 8px; margin: 12px 0; font-size: 13px; display: none; }
+        .status.show { display: block; }
+        .status.success { background: #D1F4E6; color: #00563B; border: 1px solid #34C759; }
+        .status.error { background: #FEDAD1; color: #5F0000; border: 1px solid #FF3B30; }
+        .task-item { background: #F9F9F9; padding: 12px; border-radius: 8px; margin: 8px 0; display: flex; justify-content: space-between; align-items: start; }
+        .task-info { flex: 1; }
+        .task-title { font-weight: 600; color: #000; margin-bottom: 4px; }
+        .task-detail { font-size: 12px; color: #666; margin: 2px 0; }
+        .task-delete { background: none; border: none; color: #FF3B30; font-size: 20px; cursor: pointer; padding: 0; width: 30px; }
+        .employee-item { background: #F9F9F9; padding: 12px; border-radius: 8px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; }
+        .employee-info { flex: 1; }
+        .employee-name { font-weight: 600; color: #000; }
+        .employee-phone { font-size: 12px; color: #666; }
+        .hidden { display: none !important; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .pill { display: inline-block; background: #007AFF; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; margin: 4px; }
+        .badge { background: #34C759; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
     </style>
 </head>
 <body>
 
 <div class="safe-area">
     <div class="header">
-        <h1>📱 Task Reminder</h1>
-        <p>Voice to Calendar Sync</p>
+        <h1>🤖 Smart Task Reminder</h1>
+        <p>AI-powered task management with WhatsApp automation</p>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('tasks')">📝 Tasks</div>
+        <div class="tab" onclick="switchTab('employees')">👥 Employees</div>
+        <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
     </div>
 
     <div class="content">
-        <div class="sync-banner">
-            <strong>📲 Add to Home Screen</strong>
-            Share → Add to Home Screen for instant access
-        </div>
-
-        <div id="statusAlert" class="status-alert"></div>
-
-        <div class="mic-section">
-            <button class="mic-button" id="micButton" title="Press to speak">
-                🎤
-            </button>
-        </div>
-
-        <div class="card transcript-card">
-            <div class="label-small">Your voice message</div>
-            <div class="transcript-text empty" id="transcript">Tap microphone to speak...</div>
-        </div>
-
-        <div class="card form-section">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Task date</label>
-                    <input type="date" id="taskDate">
-                </div>
-                <div class="form-group">
-                    <label>Due time</label>
-                    <input type="time" id="taskTime" value="09:00">
-                </div>
+        <!-- TASKS TAB -->
+        <div id="tab-tasks" class="tab-content">
+            <div class="card">
+                <h2 style="margin: 0 0 12px; font-size: 16px;">🎤 Speak Your Task</h2>
+                <p style="color: #666; font-size: 12px; margin: 0 0 12px;">Try: "Remind Ali to check inventory tomorrow at 2pm" or "Call Dubai branch manager at 3pm today"</p>
+                <button class="mic-button" id="micBtn">🎤 Start Recording</button>
+                <div class="transcript" id="transcript">Tap to start speaking...</div>
+                <div class="status" id="status"></div>
             </div>
 
-            <div class="form-row full">
+            <div class="card" style="display: none;" id="parseCard">
+                <h2 style="margin: 0 0 12px; font-size: 16px;">✨ AI Parsed Details</h2>
                 <div class="form-group">
-                    <label>Branch / Employee</label>
-                    <select id="taskBranch">
-                        <option value="">Select branch...</option>
-                        <option value="Branch A">Branch A</option>
-                        <option value="Branch B">Branch B</option>
-                        <option value="Branch C">Branch C</option>
-                        <option value="Head Office">Head Office</option>
+                    <label>Task Name</label>
+                    <input type="text" id="taskName" placeholder="What to do...">
+                </div>
+                <div class="form-group">
+                    <label>Employee/Branch</label>
+                    <select id="employeeSelect">
+                        <option value="">Select employee...</option>
                     </select>
                 </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="taskDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Time</label>
+                        <input type="time" id="taskTime">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Reminder (days before)</label>
+                        <select id="reminderDays">
+                            <option value="0">Same day</option>
+                            <option value="1" selected>1 day</option>
+                            <option value="2">2 days</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Send WhatsApp?</label>
+                        <select id="sendWhatsApp">
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="button" onclick="createTask()">📅 Create Task & Reminder</button>
+                <button class="button button-secondary" onclick="cancelTask()">Cancel</button>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Remind before</label>
-                    <select id="reminderDays">
-                        <option value="0">Same day</option>
-                        <option value="1" selected>1 day before</option>
-                        <option value="2">2 days before</option>
-                        <option value="3">3 days before</option>
-                        <option value="7">1 week before</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Reminder time</label>
-                    <select id="reminderTime">
-                        <option value="09:00">9:00 AM</option>
-                        <option value="10:00">10:00 AM</option>
-                        <option value="14:00" selected>2:00 PM</option>
-                        <option value="17:00">5:00 PM</option>
-                    </select>
-                </div>
+            <div class="card">
+                <h2 style="margin: 0 0 12px; font-size: 16px;">📋 Scheduled Tasks</h2>
+                <div id="tasksList"></div>
             </div>
         </div>
 
-        <div class="button-group full">
-            <button class="btn-secondary" id="clearBtn">Clear</button>
-            <button class="btn-primary" id="addBtn">📅 Add to Calendar</button>
+        <!-- EMPLOYEES TAB -->
+        <div id="tab-employees" class="tab-content hidden">
+            <div class="card">
+                <h2 style="margin: 0 0 12px; font-size: 16px;">➕ Add Employee</h2>
+                <div class="form-group">
+                    <label>Employee Name</label>
+                    <input type="text" id="empName" placeholder="e.g., Ali, Fatima">
+                </div>
+                <div class="form-group">
+                    <label>Phone (WhatsApp)</label>
+                    <input type="tel" id="empPhone" placeholder="+974 XXXX XXXX">
+                </div>
+                <div class="form-group">
+                    <label>Branch/Department</label>
+                    <input type="text" id="empBranch" placeholder="e.g., Dubai Sales">
+                </div>
+                <button class="button" onclick="addEmployee()">✅ Save Employee</button>
+            </div>
+
+            <div class="card">
+                <h2 style="margin: 0 0 12px; font-size: 16px;">👥 Saved Employees</h2>
+                <div id="employeesList"></div>
+            </div>
         </div>
 
-        <div id="instructionBox" style="display: none; background: #D5E5FF; border: 1px solid #007AFF; border-radius: 10px; padding: 16px; margin-bottom: 20px; font-size: 13px; color: #003D99;">
-            <p style="margin: 0 0 8px; font-weight: 600;">📱 On iPhone:</p>
-            <p style="margin: 0 0 8px;">1. Tap the "Add to Calendar" button below</p>
-            <p style="margin: 0 0 8px;">2. A file will download → Tap to open</p>
-            <p style="margin: 0 0 8px;">3. Calendar app will open</p>
-            <p style="margin: 0; font-weight: 600;">✅ Event added automatically!</p>
+        <!-- SETTINGS TAB -->
+        <div id="tab-employees" class="tab-content hidden">
+            <div class="card">
+                <h2 style="margin: 0 0 12px; font-size: 16px;">📱 WhatsApp Automation</h2>
+                <p style="color: #666; font-size: 12px; margin: 0 0 12px;">When enabled, reminders will be sent via WhatsApp to saved employee numbers.</p>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="whatsappEnabled" checked>
+                        Enable WhatsApp Reminders
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp Message Template</label>
+                    <textarea id="whatsappTemplate" style="min-height: 80px; width: 100%; padding: 12px; border: 1px solid #E5E5EA; border-radius: 8px; font-family: inherit;">Hi {NAME}, 
+
+Reminder: {TASK}
+Time: {TIME}
+Branch: {BRANCH}
+
+Please confirm once done.</textarea>
+                </div>
+                <button class="button" onclick="saveSettings()">💾 Save Settings</button>
+            </div>
+
+            <div class="card">
+                <h2 style="margin: 0 0 12px; font-size: 16px;">🗑️ Clear All Data</h2>
+                <p style="color: #666; font-size: 12px; margin: 0 0 12px;">This will delete all tasks and employees. Cannot be undone.</p>
+                <button class="button button-danger" onclick="clearAllData()">🗑️ Clear Everything</button>
+            </div>
         </div>
 
-        <div class="tasks-section">
-            <div class="section-title">Scheduled Tasks</div>
-            <div id="tasksList"></div>
-        </div>
     </div>
 </div>
 
@@ -542,276 +199,399 @@
 
     let isRecording = false;
     let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    let employees = JSON.parse(localStorage.getItem('employees')) || [];
+    let settings = JSON.parse(localStorage.getItem('settings')) || { whatsappEnabled: true, template: 'Hi {NAME}, Reminder: {TASK} at {TIME}' };
 
-    const micButton = document.getElementById('micButton');
-    const transcriptEl = document.getElementById('transcript');
-    const taskDateInput = document.getElementById('taskDate');
-    const taskTimeInput = document.getElementById('taskTime');
-    const taskBranchSelect = document.getElementById('taskBranch');
-    const addBtn = document.getElementById('addBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const tasksListEl = document.getElementById('tasksList');
-    const statusEl = document.getElementById('statusAlert');
+    const micBtn = document.getElementById('micBtn');
+    const transcript = document.getElementById('transcript');
+    const status = document.getElementById('status');
+    const parseCard = document.getElementById('parseCard');
+    const tasksList = document.getElementById('tasksList');
+    const employeesList = document.getElementById('employeesList');
 
+    // Set default date to today
     const today = new Date().toISOString().split('T')[0];
-    taskDateInput.value = today;
-    taskDateInput.min = today;
+    document.getElementById('taskDate').value = today;
 
+    // Tab switching
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        
+        // Show appropriate tab
+        if (tabName === 'tasks') {
+            document.getElementById('tab-tasks').classList.remove('hidden');
+        } else if (tabName === 'employees') {
+            document.getElementById('tab-employees').classList.remove('hidden');
+        } else if (tabName === 'settings') {
+            document.getElementById('tab-settings').classList.remove('hidden');
+        }
+        
+        event.target.classList.add('active');
+    }
+
+    // Speech Recognition
     if (recognition) {
         recognition.addEventListener('result', (event) => {
-            let interimTranscript = '';
+            let interim = '';
             for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
+                const trans = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    transcriptEl.textContent = transcript.charAt(0).toUpperCase() + transcript.slice(1);
+                    transcript.textContent = trans.charAt(0).toUpperCase() + trans.slice(1);
                 } else {
-                    interimTranscript += transcript;
+                    interim += trans;
                 }
             }
-            if (interimTranscript && !transcriptEl.textContent.includes(interimTranscript)) {
-                transcriptEl.textContent = interimTranscript + '...';
+            if (interim && !transcript.textContent.includes(interim)) {
+                transcript.textContent = interim + '...';
             }
         });
 
         recognition.addEventListener('end', () => {
             isRecording = false;
-            micButton.classList.remove('recording');
-            if (transcriptEl.textContent === 'Listening...') {
-                transcriptEl.textContent = 'No speech detected. Try again.';
-                transcriptEl.classList.add('empty');
+            micBtn.classList.remove('recording');
+            micBtn.textContent = '🎤 Start Recording';
+            
+            // Parse the transcript
+            const rawText = transcript.textContent;
+            if (!rawText.includes('Listening') && !rawText.includes('empty') && !rawText.includes('...')) {
+                parseTaskFromText(rawText);
             }
         });
 
-        micButton.addEventListener('click', () => {
+        micBtn.addEventListener('click', () => {
             if (!isRecording) {
                 isRecording = true;
-                micButton.classList.add('recording');
-                transcriptEl.textContent = 'Listening...';
-                transcriptEl.classList.remove('empty');
+                micBtn.classList.add('recording');
+                micBtn.textContent = '⏹️ Stop Recording';
+                transcript.textContent = 'Listening...';
                 recognition.start();
             } else {
                 isRecording = false;
-                micButton.classList.remove('recording');
+                micBtn.classList.remove('recording');
+                micBtn.textContent = '🎤 Start Recording';
                 recognition.stop();
             }
         });
-    } else {
-        micButton.addEventListener('click', () => {
-            showStatus('Speech recognition not available on this device', 'error');
-        });
     }
 
-    addBtn.addEventListener('click', () => {
-        const task = transcriptEl.textContent;
-        const date = taskDateInput.value;
-        const time = taskTimeInput.value;
-        const branch = taskBranchSelect.value;
+    // Parse task from natural language
+    function parseTaskFromText(text) {
+        showStatus('🤖 Parsing your request...', 'success');
+        
+        // Simple NLP parsing
+        const patterns = {
+            employee: /(?:remind|call|contact|tell|ask)\s+([a-z\s]+?)\s+(?:to|at|on|about)/i,
+            task: /(?:remind|call|contact)\s+[a-z\s]+?\s+(?:to\s+)?([a-z\s]+?)(?:\s+(?:tomorrow|today|at|on|\d+))/i,
+            time: /(?:at|on)\s+(\d{1,2}):?(\d{2})?\s*(am|pm)?/i,
+            tomorrow: /tomorrow/i,
+            today: /today/i
+        };
+
+        let taskObj = {
+            task: 'Task',
+            employee: 'Select employee',
+            date: today,
+            time: '09:00'
+        };
+
+        // Parse employee
+        const empMatch = text.match(patterns.employee);
+        if (empMatch) {
+            taskObj.employee = empMatch[1].trim();
+        }
+
+        // Parse task
+        const taskMatch = text.match(patterns.task);
+        if (taskMatch) {
+            taskObj.task = taskMatch[1].trim();
+        }
+
+        // Parse time
+        const timeMatch = text.match(patterns.time);
+        if (timeMatch) {
+            let hour = parseInt(timeMatch[1]);
+            const min = timeMatch[2] || '00';
+            const ampm = timeMatch[3]?.toLowerCase() || 'am';
+            
+            if (ampm === 'pm' && hour !== 12) hour += 12;
+            if (ampm === 'am' && hour === 12) hour = 0;
+            
+            taskObj.time = `${String(hour).padStart(2, '0')}:${min}`;
+        }
+
+        // Parse date
+        if (patterns.tomorrow.test(text)) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            taskObj.date = tomorrow.toISOString().split('T')[0];
+        }
+
+        // Populate form
+        document.getElementById('taskName').value = taskObj.task;
+        document.getElementById('taskDate').value = taskObj.date;
+        document.getElementById('taskTime').value = taskObj.time;
+        
+        // Find matching employee
+        const matchedEmp = employees.find(e => 
+            e.name.toLowerCase().includes(taskObj.employee.toLowerCase())
+        );
+        if (matchedEmp) {
+            document.getElementById('employeeSelect').value = matchedEmp.name;
+        }
+
+        parseCard.style.display = 'block';
+        showStatus('✅ Parsed! Please review and confirm.', 'success');
+    }
+
+    // Create task
+    function createTask() {
+        const taskName = document.getElementById('taskName').value;
+        const employee = document.getElementById('employeeSelect').value;
+        const date = document.getElementById('taskDate').value;
+        const time = document.getElementById('taskTime').value;
         const reminderDays = parseInt(document.getElementById('reminderDays').value);
-        const reminderTime = document.getElementById('reminderTime').value;
+        const sendWhatsApp = document.getElementById('sendWhatsApp').value === 'yes';
 
-        if (!task || task.includes('Listening') || task.includes('No speech') || task.includes('empty')) {
-            showStatus('Speak a task first', 'error');
+        if (!taskName || !employee) {
+            showStatus('⚠️ Please fill in task name and select employee', 'error');
             return;
         }
 
-        if (!branch) {
-            showStatus('Select a branch', 'error');
-            return;
-        }
-
-        const taskObj = {
+        const task = {
             id: Date.now(),
-            task,
-            date,
-            time,
-            branch,
-            reminderDays,
-            reminderTime,
+            task: taskName,
+            employee: employee,
+            date: date,
+            time: time,
+            reminderDays: reminderDays,
+            sendWhatsApp: sendWhatsApp,
             createdAt: new Date().toLocaleDateString()
         };
 
-        tasks.push(taskObj);
+        tasks.push(task);
         localStorage.setItem('tasks', JSON.stringify(tasks));
 
-        generateAndDownloadICS(taskObj);
+        // Generate calendar event
+        generateICS(task);
 
-        showStatus(`✓ Task added! Reminder: ${formatDateWithBranch(date, reminderDays, reminderTime)} (${branch})`, 'success');
+        // Send WhatsApp if enabled
+        if (sendWhatsApp) {
+            sendWhatsAppMessage(task);
+        }
 
-        transcriptEl.textContent = 'Tap microphone to speak...';
-        transcriptEl.classList.add('empty');
-        taskBranchSelect.value = '';
-        taskDateInput.value = today;
-
-        renderTasks();
-
-        setTimeout(() => hideStatus(), 4000);
-    });
-
-    clearBtn.addEventListener('click', () => {
-        transcriptEl.textContent = 'Tap microphone to speak...';
-        transcriptEl.classList.add('empty');
-        taskBranchSelect.value = '';
-        taskDateInput.value = today;
-        taskTimeInput.value = '09:00';
-        hideStatus();
-    });
-
-    function generateAndDownloadICS(taskObj) {
-        const taskDate = new Date(taskObj.date + 'T' + taskObj.time);
+        showStatus(`✅ Task created! Calendar event added.`, 'success');
         
-        // Calculate reminder date
-        const reminderDate = new Date(taskDate);
-        reminderDate.setDate(reminderDate.getDate() - taskObj.reminderDays);
+        // Reset form
+        document.getElementById('taskName').value = '';
+        document.getElementById('employeeSelect').value = '';
+        document.getElementById('taskDate').value = today;
+        document.getElementById('taskTime').value = '09:00';
+        parseCard.style.display = 'none';
+        
+        renderTasks();
+    }
 
+    // Generate ICS
+    function generateICS(task) {
+        const taskDate = new Date(task.date + 'T' + task.time);
+        
         const formatDate = (d) => {
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
-            const hours = String(d.getHours()).padStart(2, '0');
-            const minutes = String(d.getMinutes()).padStart(2, '0');
-            const seconds = String(d.getSeconds()).padStart(2, '0');
-            return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+            const h = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            const s = String(d.getSeconds()).padStart(2, '0');
+            return `${y}${m}${day}T${h}${min}${s}`;
         };
 
-        // Create ICS content with proper formatting
         const ics = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Task Reminder//iPhone//EN
-CALSCALE:GREGORIAN
+PRODID:-//Smart Task Reminder//EN
 METHOD:PUBLISH
 X-WR-CALNAME:Task Reminders
 X-WR-TIMEZONE:UTC
 BEGIN:VEVENT
-UID:task-${taskObj.id}@reminder.local
+UID:task-${task.id}@reminder.local
 DTSTAMP:${formatDate(new Date())}
 DTSTART:${formatDate(taskDate)}
-SUMMARY:${escapeICS(taskObj.task)} (${escapeICS(taskObj.branch)})
-DESCRIPTION:Branch: ${escapeICS(taskObj.branch)}\\nTask: ${escapeICS(taskObj.task)}\\nCreated: ${taskObj.createdAt}
-LOCATION:${escapeICS(taskObj.branch)}
+SUMMARY:${task.task} (${task.employee})
+DESCRIPTION:Employee: ${task.employee}\\nTask: ${task.task}\\nBranch: ${task.employee}
+LOCATION:${task.employee}
 STATUS:CONFIRMED
-SEQUENCE:0
 BEGIN:VALARM
-TRIGGER:-PT${taskObj.reminderDays * 24}H
+TRIGGER:-PT${task.reminderDays * 24}H
 ACTION:DISPLAY
-DESCRIPTION:Reminder: ${escapeICS(taskObj.task)}
+DESCRIPTION:Reminder: ${task.task}
 END:VALARM
 END:VEVENT
 END:VCALENDAR`;
 
-        // Create blob and data URL
         const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
         const url = URL.createObjectURL(blob);
-        
-        // Try to open with Calendar app (iOS)
         const link = document.createElement('a');
         link.href = url;
-        link.download = `task-${taskObj.id}.ics`;
+        link.download = `task-${task.id}.ics`;
         link.type = 'text/calendar';
-        
-        // Try multiple methods to ensure calendar opens
-        try {
-            // Method 1: Direct download/open
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (e) {
-            // Method 2: Fallback
-            window.location.href = link.href;
-        }
-        
-        // Also save to localStorage for reference
-        let taskHistory = JSON.parse(localStorage.getItem('taskHistory')) || [];
-        taskHistory.push({
-            id: taskObj.id,
-            ics: ics,
-            createdAt: new Date().toISOString()
-        });
-        localStorage.setItem('taskHistory', JSON.stringify(taskHistory));
-    }
-
-    function escapeICS(str) {
-        if (!str) return '';
-        return str.replace(/[\r\n,;\\]/g, (char) => {
-            if (char === '\n') return '\\n';
-            if (char === '\r') return '\\r';
-            if (char === ',') return '\\,';
-            if (char === ';') return '\\;';
-            if (char === '\\') return '\\\\';
-            return char;
-        });
-    }
-
-    function downloadICS(content, filename) {
-        const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
     }
 
-    function formatDateWithBranch(date, days, time) {
-        const d = new Date(date);
-        d.setDate(d.getDate() - days);
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ` at ${time}`;
-    }
-
-    function renderTasks() {
-        if (tasks.length === 0) {
-            tasksListEl.innerHTML = '<div class="empty-state"><p>No tasks scheduled</p></div>';
+    // WhatsApp integration
+    function sendWhatsAppMessage(task) {
+        const emp = employees.find(e => e.name === task.employee);
+        if (!emp || !emp.phone) {
+            console.log('No WhatsApp number for this employee');
             return;
         }
 
-        tasksListEl.innerHTML = tasks.map(task => `
-            <div class="task-card">
+        const template = settings.template || 'Hi {NAME}, Reminder: {TASK} at {TIME}';
+        const message = template
+            .replace('{NAME}', emp.name)
+            .replace('{TASK}', task.task)
+            .replace('{TIME}', task.time)
+            .replace('{BRANCH}', emp.branch || 'HQ');
+
+        // Create WhatsApp link (user must click to send)
+        const phoneNum = emp.phone.replace(/[^\d+]/g, '');
+        const whatsappUrl = `https://wa.me/${phoneNum}?text=${encodeURIComponent(message)}`;
+        
+        // Auto-open WhatsApp (can be commented out for testing)
+        // window.open(whatsappUrl, '_blank');
+        
+        showStatus(`💬 WhatsApp message ready: Open manually to send`, 'success');
+    }
+
+    // Add employee
+    function addEmployee() {
+        const name = document.getElementById('empName').value;
+        const phone = document.getElementById('empPhone').value;
+        const branch = document.getElementById('empBranch').value;
+
+        if (!name || !phone) {
+            showStatus('⚠️ Please fill in name and phone', 'error');
+            return;
+        }
+
+        const emp = { name, phone, branch };
+        employees.push(emp);
+        localStorage.setItem('employees', JSON.stringify(employees));
+
+        document.getElementById('empName').value = '';
+        document.getElementById('empPhone').value = '';
+        document.getElementById('empBranch').value = '';
+
+        showStatus('✅ Employee added!', 'success');
+        renderEmployees();
+        updateEmployeeSelect();
+    }
+
+    // Render tasks
+    function renderTasks() {
+        if (tasks.length === 0) {
+            tasksList.innerHTML = '<p style="color: #666; font-size: 13px; text-align: center; margin: 20px 0;">No tasks scheduled yet</p>';
+            return;
+        }
+
+        tasksList.innerHTML = tasks.map(t => `
+            <div class="task-item">
                 <div class="task-info">
-                    <p class="task-title">${escapeHtml(task.task)}</p>
-                    <div class="task-meta">📅 ${formatDate(task.date)} at ${task.time}</div>
-                    <div class="task-meta">🏢 ${escapeHtml(task.branch)}</div>
-                    <div class="task-meta">🔔 ${task.reminderTime}</div>
+                    <div class="task-title">${t.task}</div>
+                    <div class="task-detail">👤 ${t.employee}</div>
+                    <div class="task-detail">📅 ${t.date} at ${t.time}</div>
+                    <div class="task-detail">🔔 Reminder: ${t.reminderDays} day(s) before ${t.sendWhatsApp ? '<span class="badge">📱 WhatsApp</span>' : ''}</div>
                 </div>
-                <button class="task-delete" onclick="deleteTask(${task.id})" title="Delete task">×</button>
+                <button class="task-delete" onclick="deleteTask(${t.id})">×</button>
             </div>
         `).join('');
     }
 
+    // Render employees
+    function renderEmployees() {
+        if (employees.length === 0) {
+            employeesList.innerHTML = '<p style="color: #666; font-size: 13px; text-align: center; margin: 20px 0;">No employees added yet</p>';
+            return;
+        }
+
+        employeesList.innerHTML = employees.map(e => `
+            <div class="employee-item">
+                <div class="employee-info">
+                    <div class="employee-name">${e.name}</div>
+                    <div class="employee-phone">${e.phone}</div>
+                    <div class="employee-phone">${e.branch}</div>
+                </div>
+                <button class="task-delete" onclick="deleteEmployee('${e.name}')">×</button>
+            </div>
+        `).join('');
+    }
+
+    // Update employee select
+    function updateEmployeeSelect() {
+        const select = document.getElementById('employeeSelect');
+        select.innerHTML = '<option value="">Select employee...</option>' + 
+            employees.map(e => `<option value="${e.name}">${e.name} (${e.branch})</option>`).join('');
+    }
+
+    // Delete task
     function deleteTask(id) {
         tasks = tasks.filter(t => t.id !== id);
         localStorage.setItem('tasks', JSON.stringify(tasks));
-        showStatus('Task deleted', 'info');
         renderTasks();
-        setTimeout(() => hideStatus(), 2000);
     }
 
-    function formatDate(dateStr) {
-        const d = new Date(dateStr + 'T00:00:00');
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    // Delete employee
+    function deleteEmployee(name) {
+        employees = employees.filter(e => e.name !== name);
+        localStorage.setItem('employees', JSON.stringify(employees));
+        renderEmployees();
+        updateEmployeeSelect();
     }
 
+    // Cancel task
+    function cancelTask() {
+        parseCard.style.display = 'none';
+        transcript.textContent = 'Tap to start speaking...';
+    }
+
+    // Save settings
+    function saveSettings() {
+        settings.whatsappEnabled = document.getElementById('whatsappEnabled').checked;
+        settings.template = document.getElementById('whatsappTemplate').value;
+        localStorage.setItem('settings', JSON.stringify(settings));
+        showStatus('✅ Settings saved!', 'success');
+    }
+
+    // Clear all data
+    function clearAllData() {
+        if (confirm('Are you sure? This will delete all tasks and employees. Cannot be undone.')) {
+            tasks = [];
+            employees = [];
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('employees', JSON.stringify(employees));
+            renderTasks();
+            renderEmployees();
+            updateEmployeeSelect();
+            showStatus('🗑️ All data cleared', 'success');
+        }
+    }
+
+    // Show status
     function showStatus(msg, type) {
-        statusEl.textContent = msg;
-        statusEl.className = `status-alert status-${type} show`;
+        status.textContent = msg;
+        status.className = `status show status-${type}`;
+        setTimeout(() => status.classList.remove('show'), 3000);
     }
 
-    function hideStatus() {
-        statusEl.classList.remove('show');
-    }
-
-    function escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, m => map[m]);
-    }
-
+    // Initialize
     renderTasks();
+    renderEmployees();
+    updateEmployeeSelect();
+
+    // Load settings
+    document.getElementById('whatsappEnabled').checked = settings.whatsappEnabled ?? true;
+    document.getElementById('whatsappTemplate').value = settings.template || 'Hi {NAME}, Reminder: {TASK} at {TIME}';
 </script>
 
 </body>
