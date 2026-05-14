@@ -512,6 +512,14 @@
             <button class="btn-primary" id="addBtn">📅 Add to Calendar</button>
         </div>
 
+        <div id="instructionBox" style="display: none; background: #D5E5FF; border: 1px solid #007AFF; border-radius: 10px; padding: 16px; margin-bottom: 20px; font-size: 13px; color: #003D99;">
+            <p style="margin: 0 0 8px; font-weight: 600;">📱 On iPhone:</p>
+            <p style="margin: 0 0 8px;">1. Tap the "Add to Calendar" button below</p>
+            <p style="margin: 0 0 8px;">2. A file will download → Tap to open</p>
+            <p style="margin: 0 0 8px;">3. Calendar app will open</p>
+            <p style="margin: 0; font-weight: 600;">✅ Event added automatically!</p>
+        </div>
+
         <div class="tasks-section">
             <div class="section-title">Scheduled Tasks</div>
             <div id="tasksList"></div>
@@ -650,6 +658,10 @@
 
     function generateAndDownloadICS(taskObj) {
         const taskDate = new Date(taskObj.date + 'T' + taskObj.time);
+        
+        // Calculate reminder date
+        const reminderDate = new Date(taskDate);
+        reminderDate.setDate(reminderDate.getDate() - taskObj.reminderDays);
 
         const formatDate = (d) => {
             const year = d.getFullYear();
@@ -661,27 +673,72 @@
             return `${year}${month}${day}T${hours}${minutes}${seconds}`;
         };
 
+        // Create ICS content with proper formatting
         const ics = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//iPhone Task Reminder//EN
+PRODID:-//Task Reminder//iPhone//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
+X-WR-CALNAME:Task Reminders
+X-WR-TIMEZONE:UTC
 BEGIN:VEVENT
-UID:${taskObj.id}@taskreminder.local
+UID:task-${taskObj.id}@reminder.local
 DTSTAMP:${formatDate(new Date())}
 DTSTART:${formatDate(taskDate)}
-SUMMARY:${taskObj.task} (${taskObj.branch})
-DESCRIPTION:Employee/Branch: ${taskObj.branch}\\nCreated: ${taskObj.createdAt}
-LOCATION:${taskObj.branch}
+SUMMARY:${escapeICS(taskObj.task)} (${escapeICS(taskObj.branch)})
+DESCRIPTION:Branch: ${escapeICS(taskObj.branch)}\\nTask: ${escapeICS(taskObj.task)}\\nCreated: ${taskObj.createdAt}
+LOCATION:${escapeICS(taskObj.branch)}
+STATUS:CONFIRMED
+SEQUENCE:0
 BEGIN:VALARM
 TRIGGER:-PT${taskObj.reminderDays * 24}H
 ACTION:DISPLAY
-DESCRIPTION:Reminder: ${taskObj.task}
+DESCRIPTION:Reminder: ${escapeICS(taskObj.task)}
 END:VALARM
 END:VEVENT
 END:VCALENDAR`;
 
-        downloadICS(ics, `task-${taskObj.id}.ics`);
+        // Create blob and data URL
+        const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        
+        // Try to open with Calendar app (iOS)
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `task-${taskObj.id}.ics`;
+        link.type = 'text/calendar';
+        
+        // Try multiple methods to ensure calendar opens
+        try {
+            // Method 1: Direct download/open
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) {
+            // Method 2: Fallback
+            window.location.href = link.href;
+        }
+        
+        // Also save to localStorage for reference
+        let taskHistory = JSON.parse(localStorage.getItem('taskHistory')) || [];
+        taskHistory.push({
+            id: taskObj.id,
+            ics: ics,
+            createdAt: new Date().toISOString()
+        });
+        localStorage.setItem('taskHistory', JSON.stringify(taskHistory));
+    }
+
+    function escapeICS(str) {
+        if (!str) return '';
+        return str.replace(/[\r\n,;\\]/g, (char) => {
+            if (char === '\n') return '\\n';
+            if (char === '\r') return '\\r';
+            if (char === ',') return '\\,';
+            if (char === ';') return '\\;';
+            if (char === '\\') return '\\\\';
+            return char;
+        });
     }
 
     function downloadICS(content, filename) {
